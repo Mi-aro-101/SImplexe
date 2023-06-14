@@ -4,6 +4,7 @@
  */
 package operation;
 
+import java.util.Arrays;
 import matrix.Matrix;
 
 /**
@@ -17,92 +18,141 @@ public class Simplexe {
     double[][] sc;
     // Matrix composed by z and sc
     Matrix M;
+    // Define if the Simplexe problem is a maximiation or minimisation
+    String resolutionMethod;
+    
+    /**
+     * Preform phase I of of resolution using Simplexe 2 phases -> minimisation
+     * @param lastLine is the equation that shall represent the mother equation temporarily for this minimisation
+     */
+    public void phaseI(double[] lastLine) {
+        this.setUpMatrix(this.getSc(), lastLine);
+        // Display the matrix before begin phase 1
+        System.out.println("Matrix brefore phase 1");
+        this.getM().displayA();
+        
+        // Preform Minimisation -> perform Gauss for phase1 minimisation
+        this.minimize();
+    }
+    
+    /**
+     * Perform phase II of resolution using Simplexe 2 phases -> this.getResolutionMethod
+     * @param lastLine is the last line of the matrix, in this case the last line is the :
+     *  mother equation z already calculed by you and off shore of the artificial or in base variables x
+     */
+    public void phaseII(double[] lastLine){
+        // First you must know which column you want to remove -> column containing the artificial variables
+        int[] indiceRmCol = {4, 5};
+        this.removeColumn(indiceRmCol);
+        
+        // Setup the new matrix with the proper new values
+        this.setUpMatrix(getM().getA(), lastLine);
+        // Display the matrix after droping the articial column
+        System.out.println("No more artificial column");
+        this.getM().displayA();
+        // Begin resolution of the matrix -> ending phase 2
+        System.out.println("Begin phase II resolution");
+        this.maximize();
+        
+    }
+    
+    /**
+     * remove the column that have the same indice as your parameter
+     * @param indiceRm is the list of the column I want to remove
+     */
+    public void removeColumn(int[] indiceRm){
+        // Setting up first the size of the mother matrix as we will drop some of it's column
+        int lineSize = this.getM().getA().length-1; //-1 because It is only the matrix without the last line 
+        int columneSize = this.getM().getA()[0].length - indiceRm.length; 
+        System.out.println(lineSize);
+        // Define the new mother matrix without artificial variables
+        double[][] newMatrix = new double[lineSize][columneSize];
+        for(int i = 0 ; i < this.getM().getA().length-1 ; i++){
+            // variables responsible of the column increment of the new Matrix
+            int k = 0;
+            for(int j = 0 ; j < this.getM().getA()[i].length ; j++){
+                // Check if the column indice is contained or not in  the "shall remove column" if so do not append it
+                if(!Matrix.kinArray(j, indiceRm)){
+                    newMatrix[i][k] = this.getM().getA()[i][j];
+                    k++;
+                }
+            }
+        }
+        
+        this.setM(new Matrix(newMatrix));
+    }
     
     /**
      * try to resolve the simplexe
-     * @return 
      */
     public void simplexe(){
-        this.setUpSimplexe();
-        // Display the matrix before change done
-        System.out.println("Matrix before change");
-        this.getM().displayA();
-        int iteration = 1;
+        // Setup the mother matrix by adding at the last line the Z temporary equation that you will calculate
+        /** CALCULATE IN HAND FIRST THE EQUATION YOU SHALL PUT ON THE LAST LINE OF THE MOTHER MATRIX :
+                *   use the line that can make artificial variables to 0 depending on the artificial variable sum equation
+                **  sum the line to the artificial variables summation == lastLine 
+        */
+        double[] lastLineI = { -2, 2, 0, 1, 0, 0, -7 };
         
-        // Perform Guass pivot Gauss Jordan operation until the value of z do not contain positive value
-        while(this.getM().ifendGauss() == false){
-            this.getM().Gauss();
-            System.out.println("Iteration number : "+iteration);
+        this.phaseI(lastLineI);  
+        
+        /** CALCULATE IN HAND FIRST THE EQUATION YOU SHALL PUT ON THE LAST LINE OF THE MOTHER MATRIX
+         * calculated depending on the only variables in the base :
+         *  use the line of the only equation that have variable in the base as base
+         *  sum it to the mother equation Z = lastLine
+         */
+        double[] lastLineII = { 0, -19, 0, 0, 36 };
+        // Phase2 does : get rid of the artificial variable column first then by giving him the last line, he will do the maximisation or minimsation
+        this.phaseII(lastLineII);
+    }
+    
+    /**
+     * This function try to maximize using Simplexe method
+     */
+    public void maximize(){
+        int iteration = 1;
+        while(this.getM().ifendGauss("max") == false){
+            System.out.println("Iteration : "+iteration);
+            this.getM().Gauss("max");
             this.getM().displayA();
             iteration++;
         }
     }
     
     /**
-     * Reunite all the method to set up the final matrix and resolve it with simplexe eventually
-     * @return 
+     * Minimisation in phase
+     * Stop condition is when all the values are+ and the second memebre is 0
      */
-    public void setUpSimplexe(){
-        this.initSetupMatrix();
-        this.secondMemberadd();
-    }
-    
+    public void minimize(){
+        int lastline = this.getM().getA().length-1;
+        int lastColumn = this.getM().getA()[0].length-1;
+        int iteration = 1;
+        while(this.getM().ifendGauss("min") == false && this.getM().getA()[lastline][lastColumn] != 0){
+            System.out.println("Iteration : "+iteration);
+            this.getM().Gauss("min");
+            this.getM().displayA();
+            iteration++;
+        }
+    }    
     /**
-     * Continue setting up the great matrix in order to use it with simplexe method
-     * 1 - add the Ei variable set up first to 1
-     * 2 - add the second member of the constraints
-     * @return 
+     * Setup the big mother matrix for resolution
+     * @param aboveLine all the lines above the last line
+     * @param lastLine represent the last line of the matrix mother -> mother equation
      */
-    public void secondMemberadd(){
-    // Set all the Ei variable to 1
-        // Colum increment variables
-        int j = this.getSc()[0].length-1; //-2 because the last element is the second member
-        for (int i = 0 ; i < this.getM().getA().length-1 ; i++) {
-            this.getM().getA()[i][j] = 1;
-            j++;
-        }
-        
-    // Adding the second member of constraints at the last column
-        // Last column of Constraints = Second member
-        j = this.getSc()[0].length-1;
-        // Last column of the matrix to set to j
-        int l = this.getM().getA()[0].length-1;
-        for ( int k = 0 ; k < this.getSc().length ; k++ ){
-            this.getM().getA()[k][l] = this.getSc()[k][j];
-        }
-    }
-    
-    /**
-     * Intialize Setting up great matrix in order to use simplexe method
-     * 1 - create new matrix object with proper size
-     * 2 - Copy all the constraints data to the the matrix
-     * 3 - add at the end of line the principal equation
-     * @return 
-     */ 
-    public void initSetupMatrix(){
-    // Line number of the marix is define by the number of line of the costraints + the principal equation
-        int linenbr = this.getSc().length+1;
-        
-    // Column number of the matrix is define by the number of column of principal equation + linenbr of contraints + contraints value after operator
-        int colnbr = this.getZ().length+this.getSc().length+1;
-        
-        this.setM(new Matrix(linenbr, colnbr));
-    // Initialize a line variable to loop in order to trannfer the Constraints element to my new Matrix simplexe
-        int i;
-    // Copy contraints array to my Simplexe matrix array
-        for(i = 0 ; i < this.getSc().length ; i++){
-            System.arraycopy(this.getSc()[i], 0, this.getM().getA()[i], 0, this.getSc()[i].length-1);
-        }
-    
-    // Copy the principal equation array at the last line of the matrix array
-        System.arraycopy(this.getZ(), 0, this.getM().getA()[i], 0, this.getZ().length);
-        
+    public void setUpMatrix(double[][] aboveLine, double[] lastLine){
+        double[][] A = new double[aboveLine.length+1][aboveLine[0].length];
+        // Copy the Constraints matrix to the mother matrix
+        System.arraycopy(aboveLine, 0, A, 0, aboveLine.length);
+        // Copy the mother equation to the last line of the matrix 
+        System.arraycopy(lastLine, 0, A[A.length-1], 0, lastLine.length);
+        // Set the mother Matrix to a new Object Matrix having Constraints and Z in it
+        this.setM(new Matrix(A));
     }
     
     // Constructor receiving the z principal equation and the constraints
-    public Simplexe(double[] z, double[][] sc){
+    public Simplexe(double[] z, double[][] sc, String resolutionMethod){
         this.setZ(z);
         this.setSc(sc);
+        this.setResolutionMethod(resolutionMethod);
     }
     // Simple constructor
     public Simplexe(){}
@@ -119,6 +169,10 @@ public class Simplexe {
     public Matrix getM() {
         return M;
     }
+
+    public String getResolutionMethod() {
+        return resolutionMethod;
+    }
     
     // Setters
     public void setZ(double[] z) {
@@ -132,5 +186,10 @@ public class Simplexe {
     public void setM(Matrix M) {
         this.M = M;
     }
+
+    public void setResolutionMethod(String resolutionMethod) {
+        this.resolutionMethod = resolutionMethod;
+    }
+
     
 }

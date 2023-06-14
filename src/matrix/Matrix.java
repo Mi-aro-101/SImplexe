@@ -17,7 +17,7 @@ public class Matrix {
      */
     public int max(double[] array){
         int max = 0;
-        for(int i = 1 ; i < array.length-2 ; i++){
+        for(int i = 1 ; i < array.length-1 ; i++){
             if(array[max] < array[i]){
                 max = i;
             }
@@ -26,19 +26,50 @@ public class Matrix {
         return max;
     }
     
+    public int min(double[] array){
+        int min = 0;
+        for(int i = 1 ; i < array.length-2 ; i++){
+            if(array[min] > array[i]){
+                min = i;
+            }
+        }
+        
+        return min;
+    }
+    
+    /**
+     * find the first positive result of the division between the secMember to the pColumn 
+     * @param maxI is the column of the pivot
+     */
+    public int firstPositive(int maxI){
+        int res = 0;
+        for(int i = 1 ; i < this.getA().length ; i++){
+            int secMemberI = this.getA()[i].length-1; 
+            double temporary1 = this.getA()[i][secMemberI]/this.getA()[i][maxI];
+            if(temporary1 > 0){
+                res = i; break;
+            }
+        }
+        
+        return res;
+    }
+    
     /**
      * Function that will find the minimum division of the second member and pivot column
      * @param maxI is the column where to watch
      * @return index of the line where min is located
      */
     public int minDivision(int maxI){
-        int minI = 0;
+        // minI is set to be the first positive number result of the division between secmember and pColumn
+        int minI = this.firstPositive(maxI);
                 
-        for (int i = 0 ; i < this.getA().length-2 ; i++){
+        for (int i = minI+1 ; i < this.getA().length-1 ; i++){
             int secMemberI = this.getA()[i].length-1;
-            double temporary = Math.abs(this.getA()[i][secMemberI]/this.getA()[i][maxI]);
-            double temporary1 = Math.abs(this.getA()[i+1][secMemberI]/this.getA()[i+1][maxI]);
-            if(temporary > temporary1) minI = i+1;
+            double temporary = this.getA()[minI][secMemberI]/this.getA()[minI][maxI];
+            double temporary1 = this.getA()[i][secMemberI]/this.getA()[i][maxI];
+            if(temporary > temporary1 && temporary > 0 && temporary1 > 0) {
+                minI = i;
+            }   
         }
         
         return minI;
@@ -46,17 +77,22 @@ public class Matrix {
     
     /**
      * Depending on simplexe method this function tries to find the pivot [Gauss]
+     * @param maxOrmin
      * @return  at the same time the pivot line and the pivot column
      */
-    public int[] pivot(){
+    public int[] pivot(String maxOrmin){
         //proper column
         int last = this.getA().length-1;
-        int maxI = this.max(this.getA()[last]);
+        int pivotCol = this.max(this.getA()[last]);
+        
+        if(maxOrmin.equals("min")){
+            pivotCol = this.min(this.getA()[last]);
+        }
         // proper line
-        int i = this.minDivision(maxI);
+        int i = this.minDivision(pivotCol);
         
         int minmax[] = new int[2];
-        minmax[0] = i;minmax[1]=maxI;
+        minmax[0] = i;minmax[1]=pivotCol;
         
         return minmax;
     }
@@ -77,11 +113,14 @@ public class Matrix {
     
     /** 
      * Perform Gauss Jordan pivot to set the pivot column to 0
+     * @param minorMax define if the resolution shall be in minimisation method or maximisation
      */
-    public void Gauss(){
-        // Getting pivot 
-        int[] pivot = this.pivot();
+    public void Gauss(String minorMax){
+        // Getting pivot depending on how It shall be resolve, max or min
+        int[] pivot = this.pivot(minorMax);
         int pLine = pivot[0] , pColumn = pivot[1];
+        System.out.println("pivot line : "+pLine);
+        System.out.println("pivot column : "+pColumn);
         // Divide pivot entire line to pivot element
         this.dividePivot(pLine, pColumn);
         
@@ -101,24 +140,39 @@ public class Matrix {
     
     /** 
      * Check if the iteration must end
+     * @param minOrMax chooses wether if it is a maximisation or minimisation
      * @return boolean if it shall stop or not
      */
-    public boolean ifendGauss(){
+    public boolean ifendGauss(String minOrMax){
         boolean value = true;
         // index of the last line of the matrix -> principal equation
         int zLine = this.getA().length-1;
+        // If the resolution shall be a maximisation
+        if(minOrMax.equals("max")){
         // Column iteration
-        for(int j = 0 ; j < this.getA()[zLine].length ; j++){
-            if(this.getA()[zLine][j] > 0) {
-                value = false;
-                break;
+            for(int j = 0 ; j < this.getA()[zLine].length ; j++){
+                if(this.getA()[zLine][j] > 0) {
+                    value = false;
+                    break;
+                }
+            }
+        }
+        
+        else if(minOrMax.equals("min")){
+            for(int j = 0 ; j < this.getA()[zLine].length ; j++){
+                if(this.getA()[zLine][j] < 0) {
+                    value = false;
+                    break;
+                }
             }
         }
         
         return value;
     }
     
-    // Display entire matrix
+    /**
+     * Display entire matrix
+     */
     public void displayA(){
         for (double[] a : this.getA()) {
             for (int j = 0; j < a.length; j++) {
@@ -128,9 +182,24 @@ public class Matrix {
         }
     }
     
+    /**
+     * Check if an element is in an array
+     * @param k is the element that we want to check
+     * @param array is the array that will be checked if it contains k
+     * @return true if k is in array otherwise false
+     */
+    public static boolean kinArray(int k, int[] array){
+        boolean result =false;
+        for(int a : array){
+            if(k == a) result=true;
+        }
+        
+        return result;
+    }
+    
     // Class Constructor by giving the Matrix dimension
-    public Matrix(int line, int column){
-        this.setA(new double[line][column]);
+    public Matrix(double[][] A){
+        this.setA(A);
     }
     // Simple Constructor
     public Matrix(){}
