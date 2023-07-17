@@ -19,17 +19,19 @@ public class Main {
     //Setting datas for testing
         
     // the principal equation z considering x as the 3 variables
-        double[] x = {6, 1};
+        double[] x = { 800, 700, 300 };
         
     // The constraints in a 2D array [matrix]
         double[][] M = {
-            { -1, 3, 1, 0, 0, 0, 6 },
-            { 1, -3, 0, 0, 1, 0, 6 },
-            { 1, 1, 0, -1, 0, 1, 1 }
+            { 2.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, 4.0 },
+            { 1.0, 2.0, 1.0, 0.0, -1.0, 0.0, 1.0, 5.0 }
         };
+        
+        String[] variables = { "x1", "x2", "x3","s1", "s2", "s3", "a1", "a2" };
+        String[] inbase = { "a1", "a2", "Z" };
             
         // Call Simplexe object
-        Simplexe operator = new Simplexe(x, M, "max");
+        Simplexe operator = new Simplexe(x, M, "max", variables, inbase);
         operator.simplexe();
     }
     

@@ -4,12 +4,15 @@
  */
 package matrix;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author miaro
  */
 public class Matrix {
     double[][] A;
+    String[] inbase;
     
     /**
      * Function that tries to find the max in an array and return it's column index
@@ -17,7 +20,7 @@ public class Matrix {
      */
     public int max(double[] array){
         int max = 0;
-        for(int i = 1 ; i < array.length-1 ; i++){
+        for(int i = 0 ; i < array.length-1 ; i++){
             if(array[max] < array[i]){
                 max = i;
             }
@@ -43,7 +46,7 @@ public class Matrix {
      */
     public int firstPositive(int maxI){
         int res = 0;
-        for(int i = 1 ; i < this.getA().length ; i++){
+        for(int i = 0 ; i < this.getA().length ; i++){
             int secMemberI = this.getA()[i].length-1; 
             double temporary1 = this.getA()[i][secMemberI]/this.getA()[i][maxI];
             if(temporary1 > 0){
@@ -111,19 +114,38 @@ public class Matrix {
         }
     }
     
+    /**
+     * Check if the pivot column is a variable in Z
+     * @param i
+     * @param variables
+     * @return 
+     */
+    public boolean isInBase(int i, String[] variables){
+        boolean val = false;
+        if(variables[i].contains("x")){
+            val = true;
+        }
+        
+        return val;
+    }
+    
     /** 
      * Perform Gauss Jordan pivot to set the pivot column to 0
      * @param minorMax define if the resolution shall be in minimisation method or maximisation
      */
-    public void Gauss(String minorMax){
+    public void Gauss(String minorMax, String[] inbase, String[] variables, ArrayList<Integer> pivots){
         // Getting pivot depending on how It shall be resolve, max or min
         int[] pivot = this.pivot(minorMax);
         int pLine = pivot[0] , pColumn = pivot[1];
+        if(minorMax.equals("min")){
+            pivots.add(pivot[0]);pivots.add(pivot[1]);
+        }
         System.out.println("pivot line : "+pLine);
         System.out.println("pivot column : "+pColumn);
         // Divide pivot entire line to pivot element
         this.dividePivot(pLine, pColumn);
         
+        inbase[pLine] = variables[pColumn];
         // line iteration
         for(int i = 0 ; i < this.getA().length ; i++){
             // Do not perform the Gauss on the pivot line
@@ -131,10 +153,26 @@ public class Matrix {
             // Perform calcul for all the other line
             double a = this.getA()[i][pColumn];
             double b = this.getA()[pLine][pColumn];
+            // Change the variables in base depending on pivot
             // Column iteration
             for(int j = 0 ; j < this.getA()[i].length ; j++){
                 this.getA()[i][j] = (b*this.getA()[i][j]) - (a*this.getA()[pLine][j]);
             }
+        }
+    }
+    
+    public void GausswPivot(ArrayList<Integer> pivot){
+        int pLine = pivot.get(0) , pColumn = pivot.get(1);
+        // Divide pivot entire line to pivot element
+        this.dividePivot(pLine, pColumn);
+        // Precise that it shall only touch the last lin-> in order to get the proper value of Z having a variable in base to 0
+        int l = this.getA().length-1;
+        // Perform calcul for all the other line
+        double a = this.getA()[l][pColumn];
+//        double b = this.getA()[pLine][pColumn];
+        // Column iteration
+        for(int j = 0 ; j < this.getA()[l].length ; j++){
+            this.getA()[l][j] = (this.getA()[l][j]) - (a*this.getA()[pLine][j]);
         }
     }
     
@@ -174,9 +212,10 @@ public class Matrix {
      * Display entire matrix
      */
     public void displayA(){
-        for (double[] a : this.getA()) {
-            for (int j = 0; j < a.length; j++) {
-                System.out.print(a[j] + "    ");
+        for (int i = 0 ; i< this.getA().length ; i++) {
+            System.out.print(this.getInbase()[i]+"    ");
+            for (int j = 0; j < this.getA()[i].length; j++) {
+                System.out.print(this.getA()[i][j] + "    ");
             }
             System.out.println("\n");
         }
@@ -198,8 +237,9 @@ public class Matrix {
     }
     
     // Class Constructor by giving the Matrix dimension
-    public Matrix(double[][] A){
+    public Matrix(double[][] A, String[] inbase){
         this.setA(A);
+        this.setInbase(inbase);
     }
     // Simple Constructor
     public Matrix(){}
@@ -208,11 +248,17 @@ public class Matrix {
     public double[][] getA() {
         return A;
     }
+
+    public String[] getInbase() {
+        return inbase;
+    }
     
     // Setter
     public void setA(double[][] A) {
         this.A = A;
     }
-    
-    
+
+    public void setInbase(String[] inbase) {
+        this.inbase = inbase;
+    }
 }
